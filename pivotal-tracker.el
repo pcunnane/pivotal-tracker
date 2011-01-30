@@ -46,6 +46,9 @@
 (defconst pivotal-states `("unstarted" "started" "finished" "delivered" "accepted" "rejected")
   "story status will be one of these values")
 
+(defconst pivotal-story-types `("feature" "bug" "chore" "release")
+  "story type will be one of these values")
+
 (defconst pivotal-current-iteration-number -1)
 
 (defvar *pivotal-current-project*)
@@ -151,6 +154,17 @@
                'pivotal-add-comment-callback
                (format "<note><text>%s</text></note>" (xml-escape-string comment))))
 
+(defun pivotal-create-story (name)
+  "prompt user for a title and story type and create a story"
+  (interactive "sTitle: ")
+  (let ((story-type (completing-read "Story Type: " pivotal-story-types nil t)))
+    (pivotal-api (pivotal-url "projects" *pivotal-current-project* "stories")
+                 "POST"
+                 'pivotal-create-story-callback
+                 (format "<story><story_type>%s</story_type><name>%s</name></story>" 
+                         (xml-escape-string story-type)
+                         (xml-escape-string name)))))
+
 
 ;;;;;;;; CALLBACKS
 
@@ -189,6 +203,8 @@
     (with-current-buffer (get-buffer-create "*pivotal-iteration*")
       (pivotal-append-to-current-story comment))))
 
+(defun pivotal-create-story-callback (status) nil)
+
 ;;;;;;;; MODE DEFINITIONS
 
 
@@ -211,7 +227,8 @@
   (define-key pivotal-mode-map (kbd "N") 'pivotal-next-iteration)
   (define-key pivotal-mode-map (kbd "P") 'pivotal-previous-iteration)
   (define-key pivotal-mode-map (kbd "E") 'pivotal-estimate-story)
-  (define-key pivotal-mode-map (kbd "C") 'pivotal-add-comment)
+  (define-key pivotal-mode-map (kbd "A") 'pivotal-add-comment)
+  (define-key pivotal-mode-map (kbd "C") 'pivotal-create-story)
   (define-key pivotal-mode-map (kbd "S") 'pivotal-set-status)
   (define-key pivotal-mode-map (kbd "L") 'pivotal)
   (setq font-lock-defaults '((pivotal-font-lock-keywords) nil t))
